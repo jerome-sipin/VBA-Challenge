@@ -1,0 +1,154 @@
+Sub Econ()
+    ' Variable to temporarily store Ticker name
+    Dim tickerTemp As String
+    
+    'Variable to temporarily to store year open price
+    Dim yearOpenTemp As Double
+    
+    'Variable to temporarily store year close price
+    Dim yearCloseTemp As Double
+    
+    'Variable to temporarily store difference between year close and year open prices
+    Dim yearlyDiffTemp As Double
+    
+    'Variable to temporarily store the percent change in price
+    Dim percentChangeTemp As Variant
+    
+    'Variable to temporarily store the total volume of stocks
+    Dim totalVolTemp As Variant
+    
+    'Variable to temporarily store a row's volume of stocks (mainly to prevent overflow)
+    Dim volTemp As Variant
+    
+    'Controls the row in which values are put in
+    Dim loopValue As Integer
+    
+    'Initializes tickerTemp to first ticker in the sheet
+    tickerTemp = Cells(2, 1).Value
+    
+    'The next 8 variables store the greatest percent change, worst percent change,
+    'and greatest volume values in addition to their associated tickers.
+    Dim bestPercentChange As Variant
+    
+    Dim bestPTicker As String
+    
+    Dim worstPercentChange As Variant
+    
+    Dim worstPTicker As String
+    
+    Dim greatestVolume As Variant
+    
+    Dim greatestVTicker As String
+    
+    'Initialization of variables
+    yearOpenTemp = Cells(2, 3).Value
+    yearCloseTemp = 0
+    yearlyDiffTemp = 0
+    percentChangeTemp = 0
+    totalVolTemp = Cells(2, 7).Value
+    loopValue = 2
+    bestPercentChange = 0
+    worstPercentChange = 0
+    greatestVolume = 0
+    
+    'Finds the last row that contains data
+    Dim lastRow As Long
+    lastRow = Cells(Rows.Count, 1).End(xlUp).Row
+    
+    
+    For i = 2 To lastRow
+
+        'Finds the total volume of stocks
+        volTemp = Cells(i, 7).Value
+        totalVolTemp = volTemp + totalVolTemp
+        volTemp = 0
+
+        'Detects when a ticker value changes
+        If Cells(i, 1).Value <> Cells(i + 1, 1).Value Then
+
+            'Sets temporary variables to their needed values
+            tickerTemp = Cells(i, 1).Value
+            yearCloseTemp = Cells(i, 6).Value
+            yearlyDiffTemp = yearCloseTemp - yearOpenTemp
+
+            'PLNT ticker has all 0's for some reason... This causes a division by zero; the following
+            'If statement makes the script skip a ticker with all 0's or find where the ticker DOES
+            'have trades after the beginning of the year.
+            If yearOpenTemp = 0 And yearCloseTemp = 0 Then
+
+                percentChangeTemp = 0
+
+            ElseIf yearOpenTemp = 0 Then
+
+                'Backwards for loop, finds where the PLNT ticker has its first non-zero trading price.
+                For j = i To 2 Step -1
+
+                    If Cells(j - 1, 3) = 0 Then
+
+                        yearOpenTemp = Cells(j, 3).Value
+                        percentChangeTemp = ((yearCloseTemp - yearOpenTemp) / yearOpenTemp)
+                        Exit For
+
+                    End If
+
+                Next j
+
+            Else
+
+                percentChangeTemp = ((yearCloseTemp - yearOpenTemp) / yearOpenTemp)
+
+            End If
+
+            'Puts the needed information in the correct cells
+            Cells(loopValue, 9).Value = tickerTemp
+            Cells(loopValue, 10).Value = yearlyDiffTemp
+            Cells(loopValue, 11).Value = percentChangeTemp
+            Cells(loopValue, 12).Value = totalVolTemp
+            
+            'The following 3 If statements check if the current temp variable meets the conditions to be the greatest
+            'percent increase/decrease or greatest volume. If so, it records their values and the associated ticker.
+            If percentChangeTemp > bestPercentChange Then
+            
+                bestPercentChange = percentChangeTemp
+                bestPTicker = tickerTemp
+            
+            End If
+            
+            If percentChangeTemp < worstPercentChange Then
+            
+                worstPercentChange = percentChangeTemp
+                worstPTicker = tickerTemp
+            
+            End If
+            
+            If totalVolTemp > greatestVolume Then
+            
+                greatestVolume = totalVolTemp
+                greatestVTicker = tickerTemp
+            
+            End If
+
+            'Reinitializes temporary variables so that they are clean for the next ticker
+            tickerTemp = Cells(i + 1, 1).Value
+            yearOpenTemp = Cells(i + 1, 3).Value
+            yearCloseTemp = 0
+            yearlyDiffTemp = 0
+            percentChangeTemp = 0
+            totalVolTemp = 0
+            loopValue = loopValue + 1
+            
+
+        End If
+
+    Next i
+    
+    'Puts final values of "best" variables in their associated cells
+    Cells(2, 16).Value = bestPTicker
+    Cells(2, 17).Value = bestPercentChange
+    Cells(3, 16).Value = worstPTicker
+    Cells(3, 17).Value = worstPercentChange
+    Cells(4, 16).Value = greatestVTicker
+    Cells(4, 17).Value = greatestVolume
+    
+
+End Sub
